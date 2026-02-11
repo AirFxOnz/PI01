@@ -2,6 +2,8 @@
 
 This project consists of transforming a 3D printer into an automated sorting machine capable of identifying and sorting hardware components such as screws, washers, nuts etc...
 
+![Picture of our printer](Images/imprimante.png)
+
 # Materials
 - 3D Printer: Tronxy X5
 - Raspberry Pi 5 with camera module
