@@ -2,16 +2,10 @@
 Main - Système de tri automatique de pièces
 
 SYSTÈME DE COORDONNÉES :
-  - La caméra est FIXE au-dessus du plateau (pas sur la tête).
-  - La tête se place au coin (X=0, Y=320) pour ne pas gêner la photo.
-  - Résolution capteur : 4056×3040 (Pi HQ Camera).
-  - L'image rognée fait ~3002×2918 pixels (dynamique selon crop).
-  
-  Correspondance image → plateau :
-    pixel(0, 0)         = haut-gauche image  = machine(0, 320) mm
-    pixel(crop_w, 0)    = haut-droit image   = machine(320, 320) mm
-    pixel(0, crop_h)    = bas-gauche image   = machine(0, 0) mm
-    pixel(crop_w, crop_h) = bas-droit image  = machine(320, 0) mm
+  -La caméra est FIXE au-dessus du plateau 
+  -La tête se place au coin (X=0, Y=320) pour ne pas gêner la photo.
+  -Résolution capteur : 4056×3040 (Pi AI Camera).
+  -L'image rognée fait ~3002×2918 pixels (dynamique selon crop).
   
   Conversion (dynamique) :
     mm_x = (pixel_x / crop_w) * 320
@@ -20,16 +14,17 @@ SYSTÈME DE COORDONNÉES :
   Les bacs sont sur le bord droit (X=320mm).
   
   Séquence de poussée pour chaque pièce :
-    1. Approche XY au-dessus de la pièce (Z haute)
-    2. Descente (Z basse, brosse touche le plateau)
-    3. Alignement Y : pousser la pièce latéralement vers Y du bac
-    4. Poussée X : pousser la pièce vers le bord droit (X=320)
-    5. Remontée (Z haute)
+    1.Approche XY au-dessus de la pièce (Z haute)
+    2.Descente (Z basse, brosse touche le plateau)
+    3.Alignement Y : pousser la pièce latéralement vers Y du bac
+    4.Poussée X : pousser la pièce vers le bord droit (X=320)
+    5.Remontée (Z haute)
+    6.Aller et retour pour pousser les pièces qui seraient rester sur le bords
 """
 import time
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))) #pour bien trouver les dépendences
 
 import cv2
 import tkinter as tk
@@ -43,31 +38,28 @@ from piece_priority import (
 from tronxy_gui_pixel import TronxyPixelGUI
 from bac_assignment_gui import BacAssignmentGUI
 
-# ============================================================
 #  CONFIGURATION (tout en mm)
-# ============================================================
 
 PLATE_W_MM = 320.0
 PLATE_H_MM = 320.0
-OFFSET_X_MM = 5.0
+OFFSET_X_MM = 5.0 #pour que la brosse se pose bien au dessus des pièces (a regler en fonction de la position de la caméra)
 
-# Mapping dynamique : sera défini par l'utilisateur via la GUI
-# label_str → numéro de bac (1-4)
-LABEL_TO_BAC = {}
 
-# Positions Y (mm) des 4 bacs physiques le long du bord droit
+LABEL_TO_BAC = {} # pour assigné les bacs
+
+# Positions Y en mm des 4 bacs le long du bord droit
 BACS_Y_MM = {
     1: 270,
     2: 200,
     3: 120,
     4: 50,
 }
-#czczbox6766767676767676676767676767667677667676767667676767676677676676767676767667676767676767676767
+#6766767676767676676767676767667677667676767667676767676677676676767676767667676767676767676767
 BORD_X_MM = 315.0
 
 Z_HAUTE = 15
-Z_BASSE = 0
-Z_BASSE_VIS = 5
+Z_BASSE = 2
+Z_BASSE_VIS = 2
 
 PLATEAU = Plateau(
     largeur=PLATE_W_MM,
@@ -80,44 +72,36 @@ PLATEAU = Plateau(
     }
 )
 
-# === Vitesses (mm/min) ===
+#Vitesse (mm/min)
 F_RAPIDE = 6000
 F_POUSSEE = 6000
 F_Z = 1500
 F_BALAYAGE = 6000
 
-# === Re-scan ===
-RESCAN_EVERY_N = 3# Reprendre une photo toutes les N pièces (0 = jamais)
+#Re-scan
+RESCAN_EVERY_N = 3 # Reprends une photo toutes les n poussée de pièces
 
-
-# ============================================================
-#  CONVERSION PIXELS CAMÉRA → MM
-# ============================================================
 
 def pixels_vers_mm(px, py, crop_w, crop_h):
     mm_x = (1.0 - px / crop_w) * PLATE_W_MM
     mm_y = (py / crop_h) * PLATE_H_MM
     return round(mm_x, 2), round(mm_y, 2)
 
-
-# ============================================================
-#  GESTION CAMÉRA
-# ============================================================
-
+#GESTION CAMÉRA
 class CameraManager:
     def __init__(self):
         self.cap = None
 
-    def start(self):
+    def start(self): #démarre le truc
         if self.cap is None or not self.cap.isOpened():
             print("Démarrage de la caméra (GStreamer)...")
-            self.cap = cv2.VideoCapture(GST_PIPELINE, cv2.CAP_GSTREAMER)
+            self.cap = cv2.VideoCapture(GST_PIPELINE, cv2.CAP_GSTREAMER) #prends un photo avec le setup gst
             if not self.cap.isOpened():
                 print("Erreur GStreamer. Tentative webcam standard (0)...")
                 self.cap = cv2.VideoCapture(0)
             time.sleep(2)
 
-    def get_frame(self):
+    def get_frame(self): #prend la photo
         if self.cap is None or not self.cap.isOpened():
             self.start()
         if self.cap and self.cap.isOpened():
@@ -136,23 +120,20 @@ class CameraManager:
 
 camera = CameraManager()
 
-
-# ============================================================
-#  FONCTIONS D'ORCHESTRATION
-# ============================================================
+#faits touts le processus
 
 def lancer_detection_seule():
     """Bouton 'Capturer + Détecter'."""
-    frame = camera.get_frame()
+    frame = camera.get_frame() #prend photo
     if frame is not None:
-        objets, crop_w, crop_h = lancer_detection(frame)
+        objets, crop_w, crop_h = lancer_detection(frame) # prends tout les résultats
     else:
         print("Erreur: Impossible de récupérer une image.")
 
 
 def lancer_detection(frame):
     """Détecte et affiche. Retourne (objets, crop_w, crop_h)."""
-    objets, img_result, img_debug, crop_w, crop_h = detecter_objets(frame)
+    objets, img_result, img_debug, crop_w, crop_h = detecter_objets(frame) 
     cv2.imshow("Detection - Resultat", img_result)
     cv2.imshow("Detection - Debug", img_debug)
     print(f"{len(objets)} pièce(s) détectée(s) : {objets}")
@@ -194,17 +175,17 @@ def convertir_en_pieces(objets_detectes, crop_w, crop_h):
     Convertit les dicts de détection en Pieces (mm).
     Utilise le mapping dynamique LABEL_TO_BAC pour la classe (= numéro de bac).
     """
-    pieces = []
+    pieces = [] #liste de toutes les pièces
     for i, obj in enumerate(objets_detectes, 1):
-        bac_num = LABEL_TO_BAC.get(obj['classe'])
+        bac_num = LABEL_TO_BAC.get(obj['classe']) #asigne les pièces a un bac
         if bac_num is None:
             print(f"  Pièce {i}: label '{obj['classe']}' sans bac assigné, ignorée.")
             continue
 
-        mm_x, mm_y = pixels_vers_mm(obj['x'], obj['y'], crop_w, crop_h)
+        mm_x, mm_y = pixels_vers_mm(obj['x'], obj['y'], crop_w, crop_h) #converti position des pièces
         print(f"  Pièce {i}: pixel({obj['x']}, {obj['y']}) "
               f"→ mm({mm_x}, {mm_y}) [{obj['classe']}→bac {bac_num}]")
-        pieces.append(Piece(id=i, x=mm_x, y=mm_y, classe=bac_num))
+        pieces.append(Piece(id=i, x=mm_x, y=mm_y, classe=bac_num)) #crée objet pièces
     return pieces
 
 
@@ -217,7 +198,7 @@ def calculer_ordre(pieces):
     print("=" * 50)
     for rang, entry in enumerate(ordre, 1):
         p = entry["piece"]
-        trajet = decrire_trajet(p, PLATEAU)
+        trajet = decrire_trajet(p, PLATEAU) #reçoit le trajet a faire à la pièce
         print(f"  {rang}. {p} | dist_bord={entry['dist_bord']:.1f}mm "
               f"| collisions={entry['collisions']} | {trajet}")
 
@@ -233,35 +214,33 @@ def deplacer_une_piece(gui, p):
     print(f"  Position pièce : ({piece_mm_x:.1f}, {piece_mm_y:.1f}) mm")
     print(f"  Bac cible : {p.classe} → (X={BORD_X_MM}, Y={bac_y})")
 
-    # ÉTAPE 1 : Approche avec offset X
+    # ÉTAPE 1:Approche avec offset X
     approche_x = max(piece_mm_x - OFFSET_X_MM, 0)
     gui.controller.send_command(f"G1 X{approche_x} Y{piece_mm_y} F{F_RAPIDE}")
     gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 2 : Descente
+    # ÉTAPE 2:Descente
     gui.controller.send_command(f"G1 Z{Z_BASSE} F{F_Z}")
     gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 3 : Alignement Y
+    # ÉTAPE 3:Alignement Y
     if abs(piece_mm_y - bac_y) > 1.0:
         gui.controller.send_command(f"G1 Y{bac_y} F{F_POUSSEE}")
         gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 4 : Poussée X vers le bord
+    # ÉTAPE 4:Poussée X vers le bord
     gui.controller.send_command(f"G1 X{BORD_X_MM} F{F_POUSSEE}")
     gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 5 : Balayage
-    gui.controller.send_command(f"G1 Z{Z_HAUTE} F{F_Z}")
-    gui.controller.send_command("M400", timeout_s=15)
-    gui.controller.send_command(f"G1 X{BORD_X_MM - 10} F{F_POUSSEE}")
+    # ÉTAPE 5:Balayage
+    gui.controller.send_command(f"G1 X{BORD_X_MM - 20} Z{Z_HAUTE} F{F_Z}")
     gui.controller.send_command("M400", timeout_s=15)
     gui.controller.send_command(f"G1 Z{Z_BASSE} F{F_Z}")
     gui.controller.send_command("M400", timeout_s=15)
     gui.controller.send_command(f"G1 X{BORD_X_MM} F{F_POUSSEE}")
     gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 6 : Remontée
+    # ÉTAPE 6:Remontée
     gui.controller.send_command(f"G1 Z{Z_HAUTE} F{F_Z}")
     gui.controller.send_command("M400", timeout_s=15)
 
@@ -270,14 +249,11 @@ def pipeline_complet(gui):
     """Pipeline : Homing → Capture → Détection → Assignation bacs → Tri avec re-scan."""
     global LABEL_TO_BAC
 
-    print("--- Démarrage de la séquence ---")
-
-    # 1. Homing
-    print("-> Homing (G28)...")
+    # 1.Homing
     gui.controller.send_command("G28", timeout_s=60)
     gui.controller.send_command("G90")
 
-    # 2. Première capture + détection
+    # 2.Première capture + détection
     result = capturer_et_detecter(gui)
     if result is None:
         messagebox.showerror("Erreur", "Image vide (problème caméra)")
@@ -288,7 +264,7 @@ def pipeline_complet(gui):
         messagebox.showinfo("Info", "Aucune pièce détectée.")
         return
 
-    # 3. GUI d'assignation des bacs (bloquante)
+    # 3.GUI d'assignation des bacs (bloquant)
     labels_trouves = list(set(obj['classe'] for obj in objets))
     print(f"Labels détectés : {labels_trouves}")
 
@@ -307,10 +283,10 @@ def pipeline_complet(gui):
     LABEL_TO_BAC = assignment_gui.result
     print(f"Mapping label → bac : {LABEL_TO_BAC}")
 
-    # 4. Boucle de tri avec re-scan
+    # 4.Boucle de tri avec re-scan
     pieces_triees_total = 0
 
-    while True:
+    while True:  #while pièce
         # Conversion + priorité
         print("\n--- Conversion pixels → mm ---")
         pieces = convertir_en_pieces(objets, crop_w, crop_h)
@@ -371,12 +347,8 @@ def pipeline_complet(gui):
     messagebox.showinfo("Terminé", f"Cycle fini ! {pieces_triees_total} pièce(s) triée(s).")
 
 
-# ============================================================
-#  POINT D'ENTRÉE
-# ============================================================
-
 def main():
-    root = tk.Tk()
+    root = tk.Tk() #ensuite c'est la partie graphique
 
     def on_close():
         camera.stop()
@@ -396,7 +368,7 @@ def main():
     ).pack(side=tk.LEFT, padx=5)
 
     tk.Button(
-        btn_frame, text="🚀 Pipeline Complet (Auto)",
+        btn_frame, text=" Pipeline Complet (Auto)",
         font=("Arial", 11, "bold"), width=30,
         bg="#4CAF50", fg="white",
         command=lambda: pipeline_complet(gui)
