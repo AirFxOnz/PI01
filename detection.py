@@ -8,12 +8,13 @@ import joblib
 import os
 
 
-CANNY_LOW = 50
+#CONFIGURATION
+CANNY_LOW = 50  #défitions des seuils de  pour la detection de contours
 CANNY_HIGH = 70
-CUT_TOP_PCT, CUT_BOTTOM_PCT = 0, 0.03
+CUT_TOP_PCT, CUT_BOTTOM_PCT = 0, 0.03 # % de crop
 CUT_LEFT_PCT, CUT_RIGHT_PCT = 0.13, 0.105
 
-GST_PIPELINE = (
+GST_PIPELINE = ( #setup des images
     "libcamerasrc ! video/x-raw, format=NV12, width=2028, height=1520, framerate=1/1 "
     "! videoconvert ! video/x-raw, format=BGR ! appsink drop=1"
 )
@@ -44,9 +45,7 @@ COULEURS_LABEL = {
 
 
 class Classifier:
-
-    #Classifieur basé sur DINOv2 + PCA + KMeans.
-
+   #Classifieur basé sur DINOv2 + PCA + KMeans.
 
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -77,7 +76,7 @@ class Classifier:
             self.pca = joblib.load(PCA_PATH)
             self.kmeans = joblib.load(KMEANS_PATH)
         else:
-            print(f"ATTENTION : Modèles PCA/KMeans introuvables dans '{MODEL_DIR}/'.") #sécurité
+            print(f"ATTENTION : Modèles PCA/KMeans introuvables dans '{MODEL_DIR}/'.")
             print("Lancez d'abord train_classifier.py pour entraîner et sauvegarder les modèles.")
             self.pca = None
             self.kmeans = None
@@ -93,7 +92,7 @@ class Classifier:
         print("Classifieur prêt.")
 
     def preprocess_edge(self, crop_bgr):
-        #Applique le même prétraitement que preprocessing.py sur un crop BGR.
+        # Applique le même prétraitement que preprocessing.py sur un crop BGR.
         rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
         gray = color.rgb2gray(rgb)
         gray = util.img_as_float(gray)
@@ -101,7 +100,7 @@ class Classifier:
         # Seuillage hard (nettoie le fond bruité)
         gray[gray < 0.15] = 0
 
-        # Flou + Canny (scikit-image)
+        # Flou + Canny 
         gaussian = filters.gaussian(gray, sigma=2)
         edges = feature.canny(gaussian, sigma=2)
 
@@ -139,7 +138,7 @@ class Classifier:
         return label, cluster_id
 
 
-# Instance globale du classifieur
+# Instance globale du classifieur (chargement paresseux)
 _classifier = Classifier()
 
 
@@ -147,18 +146,18 @@ def detecter_objets(frame):
     """
     Analyse la frame et retourne (données_objets, image_dessinée, image_debug, crop_w, crop_h).
 
-    Pipeline :
-      1. Rognage (ROI)
-      2. Détection de contours 
+      1. Rognage
+      2. Détection de contours (localisation des pièces)
       3. Pour chaque contour : extraction du crop -> classification DINOv2
       4. Dessin des résultats
     """
-    # Chargement paresseux du classifieur
+
+    #Chargement paresseux du classifieur
     _classifier.load()
 
     donnees_objets = []
 
-    #1 ROGNAGE (ROI)
+    #1 ROGNAGE 
     height, width, _ = frame.shape
     y_start = int(height * CUT_TOP_PCT)
     y_end = int(height * (1 - CUT_BOTTOM_PCT))
@@ -168,46 +167,46 @@ def detecter_objets(frame):
 
     crop_h, crop_w = cropped.shape[:2]
 
-    #2 PRÉ-TRAITEMENT POUR DÉTECTION DE CONTOURS (localisation uniquement)
+    # 2. PRÉ-TRAITEMENT POUR DÉTECTION DE CONTOURS (localisation uniquement)
     gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (13, 13), 0)
     edges = cv2.Canny(blur, CANNY_LOW, CANNY_HIGH)
     kernel = np.ones((7, 7), np.uint8)
     dilated = cv2.dilate(edges, kernel, iterations=1)
 
-    #Exclusion zone morte bas-droite
+    # Exclusion zone morte bas-droite
     h_d, w_d = dilated.shape
     exclude_w = int(w_d * 0.02)
     exclude_h = int(h_d * 0.03)
     dilated[h_d - exclude_h: h_d, w_d - exclude_w: w_d] = 0
 
-    #Exclusion des bords
+    # Exclusion des bords (pour que le trieuse ne les detecte pas en tant que pièce)
     b = 100
     dilated[0:b, :] = 0
     dilated[h_d - b:h_d, :] = 0
     dilated[:, 0:b] = 0
     dilated[:, w_d - b:w_d] = 0
 
-    #3 EXTRACTION DES CONTOURS
+    # 3. EXTRACTION DES CONTOURS
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     area_min = int(100 * (crop_w * crop_h) / (474 * 461))
 
-    for cnt in contours:
+    for cnt in contours:  # sort les contours de la pièce
         area = cv2.contourArea(cnt)
         if area < area_min:
             continue
 
-        M = cv2.moments(cnt)
+        M = cv2.moments(cnt)  #pour le calcul du centre des pièces pour avoir les coordonées de la pièce
         if M['m00'] == 0:
             continue
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
 
-        #4 EXTRACTION DU CROP pour classification
+        # 4. EXTRACTION DU CROP pour classification
         x_bb, y_bb, w_bb, h_bb = cv2.boundingRect(cnt)
 
-        #Marge autour du bounding box (20%)
+        # Marge autour du bounding box (20%)
         margin_x = int(w_bb * 0.2)
         margin_y = int(h_bb * 0.2)
         x1 = max(0, x_bb - margin_x)
@@ -220,11 +219,11 @@ def detecter_objets(frame):
         if piece_crop.size == 0:
             continue
 
-        #5 CLASSIFICATION par DINOv2 + PCA + KMeans
+        # 5. CLASSIFICATION par DINOv2 + PCA + KMeans
         label, cluster_id = _classifier.classify_crop(piece_crop)
         couleur = COULEURS_LABEL.get(label, (128, 128, 128))
 
-        #6 Dessin
+        # 6. DESSIN
         cv2.drawContours(cropped, [cnt], -1, couleur, 2)
         cv2.circle(cropped, (cx, cy), 5, (0, 0, 255), -1)
         cv2.putText(cropped, f"{label} (C:{cluster_id})", (cx - 30, cy - 20),
@@ -240,10 +239,10 @@ def detecter_objets(frame):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(GST_PIPELINE, cv2.CAP_GSTREAMER)
+    cap = cv2.VideoCapture(GST_PIPELINE, cv2.CAP_GSTREAMER) # prend photo
 
     while cap.isOpened():
-        ret, frame = cap.read()
+        ret, frame = cap.read()  #prend une image
         if not ret:
             break
 
