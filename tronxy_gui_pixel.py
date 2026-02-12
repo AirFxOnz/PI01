@@ -10,19 +10,19 @@ class TronxyPixelGUI:
         self.root.title("Tronxy Control - Mode Pixels")
         self.root.geometry("700x500")
 
-        GST_W = 2028
-        GST_H = 1520
-        CUT_LEFT, CUT_RIGHT = 0.10, 0.16
-        CUT_TOP, CUT_BOTTOM = 0.0, 0.04
+        GST_W = 2028 #definition largeur
+        GST_H = 1520 #définition hauteur
+        CUT_LEFT, CUT_RIGHT = 0.10, 0.16  #pourcentage de cropage des images
+        CUT_TOP, CUT_BOTTOM = 0.0, 0.04 #pourcentage de cropage des images
 
-        self.screen_width = float(int(GST_W * (1 - CUT_RIGHT)) - int(GST_W * CUT_LEFT))   # ~1501
-        self.screen_height = float(int(GST_H * (1 - CUT_BOTTOM)) - int(GST_H * CUT_TOP))  # ~1459
+        self.screen_width = float(int(GST_W * (1 - CUT_RIGHT)) - int(GST_W * CUT_LEFT))   # croppage des images
+        self.screen_height = float(int(GST_H * (1 - CUT_BOTTOM)) - int(GST_H * CUT_TOP))  # croppage des images
 
-        self.X_MIN, self.X_MAX = 0, 320
+        self.X_MIN, self.X_MAX = 0, 320  #définition des tailles plateau pour la tête
         self.Y_MIN, self.Y_MAX = 0, 320
         self.Z_MIN, self.Z_MAX = 0, 255
 
-        self.current_x = 0.0
+        self.current_x = 0.0 #position actuelle
         self.current_y = 0.0
         self.current_z = 0.0
 
@@ -35,36 +35,18 @@ class TronxyPixelGUI:
         top_frame = ttk.Frame(self.root)
         top_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Button(top_frame, text="Se connecter", command=self.connect).pack(side=tk.LEFT, padx=5)
-        ttk.Button(top_frame, text="Déconnecter", command=self.disconnect).pack(side=tk.LEFT, padx=5)
-        ttk.Button(top_frame, text="Home (G28)", command=self.home).pack(side=tk.LEFT, padx=5)
+        ttk.Button(top_frame, text="Se connecter", command=self.connect).pack(side=tk.LEFT, padx=5) #bouton connection
+        ttk.Button(top_frame, text="Déconnecter", command=self.disconnect).pack(side=tk.LEFT, padx=5) #bouton déconnection
+        ttk.Button(top_frame, text="Home (G28)", command=self.home).pack(side=tk.LEFT, padx=5) #bouton homing
 
         self.status_label = ttk.Label(top_frame, text="Déconnecté", foreground="red")
         self.status_label.pack(side=tk.LEFT, padx=20)
 
-        param_frame = ttk.LabelFrame(self.root, text="Plateau (mm)")
-        param_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        ttk.Label(param_frame, text="Largeur (mm):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=3)
-        self.width_var = tk.StringVar(value="320")
-        ttk.Entry(param_frame, textvariable=self.width_var, width=10).grid(row=0, column=1, sticky=tk.W)
-
-        ttk.Label(param_frame, text="Hauteur (mm):").grid(row=0, column=2, sticky=tk.W, padx=5, pady=3)
-        self.height_var = tk.StringVar(value="320")
-        ttk.Entry(param_frame, textvariable=self.height_var, width=10).grid(row=0, column=3, sticky=tk.W)
-
-        screen_frame = ttk.LabelFrame(self.root, text="Image caméra rognée (pixels)")
-        screen_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        ttk.Label(screen_frame, text="Largeur (px):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=3)
-        self.screen_width_var = tk.StringVar(value="3002")
-        ttk.Entry(screen_frame, textvariable=self.screen_width_var, width=10).grid(row=0, column=1, sticky=tk.W)
-
-        ttk.Label(screen_frame, text="Hauteur (px):").grid(row=0, column=2, sticky=tk.W, padx=5, pady=3)
-        self.screen_height_var = tk.StringVar(value="2918")
-        ttk.Entry(screen_frame, textvariable=self.screen_height_var, width=10).grid(row=0, column=3, sticky=tk.W)
-
-        ttk.Button(screen_frame, text="Mettre à jour", command=self.update_params).grid(row=0, column=4, padx=5)
+        # Paramètres par défaut
+        self.plate_width = 320.0 
+        self.plate_height = 320.0
+        self.screen_width = 1501.0
+        self.screen_height = 1459.0
 
         input_frame = ttk.LabelFrame(self.root, text="Coordonnées pixels")
         input_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -102,16 +84,6 @@ class TronxyPixelGUI:
         mm_x = (1.0 - px / self.screen_width) * self.plate_width
         mm_y = (py / self.screen_height) * self.plate_height
         return round(mm_x, 2), round(mm_y, 2)
-
-    def update_params(self):
-        try:
-            self.plate_width = float(self.width_var.get())
-            self.plate_height = float(self.height_var.get())
-            self.screen_width = float(self.screen_width_var.get())
-            self.screen_height = float(self.screen_height_var.get())
-            messagebox.showinfo("Info", "Paramètres mis à jour")
-        except ValueError:
-            messagebox.showerror("Erreur", "Valeurs invalides")
 
     def move_from_pixels(self):
         if not self.connected:

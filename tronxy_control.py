@@ -2,7 +2,7 @@ import serial
 import time
 
 """programme permettant la connection et l'envoie de commande G-code pour les mouvements de l'imprimante, peut fonctionner en stand-alone
-sur un terminal pour vérifier les connections"""
+sur un terminal pour vérifier les connections  """
 
 class TronxyController:
     def __init__(self, port='/dev/ttyACM0', baud=115200, timeout=1): #changer le port et baud rate en fonction des specs du périphérique
