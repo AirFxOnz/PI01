@@ -6,7 +6,7 @@ sur un terminal pour vérifier les connections  """
 
 class TronxyController:
     def __init__(self, port='/dev/ttyACM0', baud=115200, timeout=1): #changer le port et baud rate en fonction des specs du périphérique
-        self.port = port
+        self.port = port<sdf
         self.baud = baud
         self.timeout = timeout
         self.ser = None
