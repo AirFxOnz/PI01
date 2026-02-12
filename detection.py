@@ -7,13 +7,15 @@ from skimage import color, filters, feature, util
 import joblib
 import os
 
-
-CANNY_LOW = 50
+# ==========================================
+# CONFIGURATION
+# ==========================================
+CANNY_LOW = 50  #défitions des seuils de  pour la detection de contours
 CANNY_HIGH = 70
-CUT_TOP_PCT, CUT_BOTTOM_PCT = 0, 0.03
+CUT_TOP_PCT, CUT_BOTTOM_PCT = 0, 0.03 # % de crop
 CUT_LEFT_PCT, CUT_RIGHT_PCT = 0.13, 0.105
 
-GST_PIPELINE = (
+GST_PIPELINE = ( #setup des images
     "libcamerasrc ! video/x-raw, format=NV12, width=2028, height=1520, framerate=1/1 "
     "! videoconvert ! video/x-raw, format=BGR ! appsink drop=1"
 )
@@ -181,7 +183,7 @@ def detecter_objets(frame):
     exclude_h = int(h_d * 0.03)
     dilated[h_d - exclude_h: h_d, w_d - exclude_w: w_d] = 0
 
-    #Exclusion des bords
+    # Exclusion des bords (pour que le trieuse ne les detecte pas en tant que pièce)
     b = 100
     dilated[0:b, :] = 0
     dilated[h_d - b:h_d, :] = 0
@@ -193,12 +195,12 @@ def detecter_objets(frame):
 
     area_min = int(100 * (crop_w * crop_h) / (474 * 461))
 
-    for cnt in contours:
+    for cnt in contours:  # sort les contours de la pièce
         area = cv2.contourArea(cnt)
         if area < area_min:
             continue
 
-        M = cv2.moments(cnt)
+        M = cv2.moments(cnt)  #pour le calcul du centre des pièces pour avoir les coordonées de la pièce
         if M['m00'] == 0:
             continue
         cx = int(M['m10'] / M['m00'])
@@ -240,10 +242,10 @@ def detecter_objets(frame):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(GST_PIPELINE, cv2.CAP_GSTREAMER)
+    cap = cv2.VideoCapture(GST_PIPELINE, cv2.CAP_GSTREAMER) # prend photo
 
     while cap.isOpened():
-        ret, frame = cap.read()
+        ret, frame = cap.read()  #prend une image
         if not ret:
             break
 
