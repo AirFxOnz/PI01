@@ -7,9 +7,14 @@ from skimage import color, filters, feature, util
 import joblib
 import os
 
+<<<<<<< HEAD
+
+#CONFIGURATION
+=======
 # ==========================================
 # CONFIGURATION
 # ==========================================
+>>>>>>> c918ff127ea9c40f79682bd87452c0e0098d21ad
 CANNY_LOW = 50  #défitions des seuils de  pour la detection de contours
 CANNY_HIGH = 70
 CUT_TOP_PCT, CUT_BOTTOM_PCT = 0, 0.03 # % de crop
@@ -46,10 +51,7 @@ COULEURS_LABEL = {
 
 
 class Classifier:
-    """
-    Classifieur basé sur DINOv2 + PCA + KMeans.
-    Charge les modèles pré-entraînés au démarrage.
-    """
+   #Classifieur basé sur DINOv2 + PCA + KMeans.
 
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -66,7 +68,7 @@ class Classifier:
         self._loaded = False
 
     def load(self):
-        """Charge DINOv2 et les modèles PCA/KMeans sauvegardés."""
+        #Charge DINOv2 et les modèles PCA/KMeans sauvegardés.
         if self._loaded:
             return
 
@@ -96,10 +98,7 @@ class Classifier:
         print("Classifieur prêt.")
 
     def preprocess_edge(self, crop_bgr):
-        """
-        Applique le même prétraitement que preprocessing.py sur un crop BGR.
-        Retourne une image edges en uint8 (0 ou 255).
-        """
+        # Applique le même prétraitement que preprocessing.py sur un crop BGR.
         rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
         gray = color.rgb2gray(rgb)
         gray = util.img_as_float(gray)
@@ -107,7 +106,7 @@ class Classifier:
         # Seuillage hard (nettoie le fond bruité)
         gray[gray < 0.15] = 0
 
-        # Flou + Canny (scikit-image)
+        # Flou + Canny 
         gaussian = filters.gaussian(gray, sigma=2)
         edges = feature.canny(gaussian, sigma=2)
 
@@ -120,26 +119,24 @@ class Classifier:
         2. Conversion en image RGB 3 canaux (edges répliqué)
         3. Extraction features DINOv2
         4. PCA → KMeans → label
-
-        Retourne (label_str, cluster_id) ou ("Inconnu", -1) si modèles non chargés.
         """
         if self.pca is None or self.kmeans is None:
             return "Inconnu", -1
 
-        # 1. Prétraitement : même pipeline que preprocessing.py
+        #1 Prétraitement : même pipeline que preprocessing.py
         edges = self.preprocess_edge(crop_bgr)
 
-        # 2. Convertir edges mono-canal en image RGB 3 canaux pour DINOv2
+        #2 Convertir edges mono-canal en image RGB 3 canaux pour DINOv2
         edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
         pil_img = Image.fromarray(edges_rgb)
 
-        # 3. Extraction features DINOv2
+        #3 Extraction features DINOv2
         img_tensor = self.transform(pil_img).unsqueeze(0).to(self.device)
         with torch.no_grad():
             feat = self.model(img_tensor)
         feat_np = feat.cpu().numpy().flatten().reshape(1, -1)
 
-        # 4. PCA + KMeans
+        #4 PCA + KMeans
         feat_reduced = self.pca.transform(feat_np)
         cluster_id = int(self.kmeans.predict(feat_reduced)[0])
 
@@ -155,18 +152,18 @@ def detecter_objets(frame):
     """
     Analyse la frame et retourne (données_objets, image_dessinée, image_debug, crop_w, crop_h).
 
-    Pipeline :
-      1. Rognage (ROI)
+      1. Rognage
       2. Détection de contours (localisation des pièces)
-      3. Pour chaque contour : extraction du crop → classification DINOv2
+      3. Pour chaque contour : extraction du crop -> classification DINOv2
       4. Dessin des résultats
     """
-    # Chargement paresseux du classifieur
+
+    #Chargement paresseux du classifieur
     _classifier.load()
 
     donnees_objets = []
 
-    # 1. ROGNAGE (ROI)
+    #1 ROGNAGE 
     height, width, _ = frame.shape
     y_start = int(height * CUT_TOP_PCT)
     y_end = int(height * (1 - CUT_BOTTOM_PCT))

@@ -1,7 +1,5 @@
 """
-GUI pour assigner chaque classe détectée à un bac physique (1-4).
-Plusieurs classes peuvent être assignées au même bac.
-Affiche l'image de détection pour aider à la décision.
+Interface graphique pour assigner chaque classe détectée à un bac (1-4).
 """
 
 import tkinter as tk
@@ -11,18 +9,13 @@ import cv2
 
 
 class BacAssignmentGUI:
-    """
-    Fenêtre modale qui affiche l'image de détection et permet
-    d'assigner chaque label détecté à un des 4 bacs.
-
-    Résultat : self.result = {"Grande Vis": 1, "Ecrou": 3, ...} ou None si annulé.
-    """
+    #Fenêtre qui affiche l'image de détection et permet d'assigner chaque label détecté à un des 4 bacs.
 
     def __init__(self, parent, labels, bacs_y_mm, image):
         """
         Args:
             parent: fenêtre tkinter parente
-            labels: liste des labels détectés (ex: ["Grande Vis", "Ecrou", "Rondelle"])
+            labels: liste des labels détectés (vis ,écrous, rondelles etc..)
             bacs_y_mm: dict {1: 270, 2: 200, 3: 120, 4: 50}
             image: image BGR (numpy) de la détection
         """
@@ -31,27 +24,26 @@ class BacAssignmentGUI:
         self.bacs_y_mm = bacs_y_mm
         self.combos = {}
 
-        # Fenêtre modale
+        # Fenêtre 
         self.window = tk.Toplevel(parent)
         self.window.title("Assignation des bacs")
         self.window.transient(parent)
         self.window.grab_set()
 
-        # Layout principal : image à gauche, contrôles à droite
         main_frame = tk.Frame(self.window)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # === Image de détection ===
+        #Image de détection 
         img_frame = ttk.LabelFrame(main_frame, text="Détection")
         img_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
 
         self.display_image(img_frame, image)
 
-        # === Panneau d'assignation ===
+        # Panneau d'assignation 
         ctrl_frame = ttk.LabelFrame(main_frame, text="Assignation classe → bac")
         ctrl_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(10, 0))
 
-        # Description des bacs
+        #Description des bacs
         ttk.Label(ctrl_frame, text="Bacs physiques :",
                   font=("Arial", 10, "bold")).pack(anchor=tk.W, padx=10, pady=(10, 5))
 
@@ -62,7 +54,7 @@ class BacAssignmentGUI:
 
         ttk.Separator(ctrl_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=10, pady=10)
 
-        # Un combo par label
+        #Un combo par label
         ttk.Label(ctrl_frame, text="Choisissez le bac pour chaque classe :",
                   font=("Arial", 10, "bold")).pack(anchor=tk.W, padx=10, pady=(0, 10))
 
@@ -82,15 +74,15 @@ class BacAssignmentGUI:
 
         ttk.Separator(ctrl_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=10, pady=10)
 
-        # Boutons
+        #Boutons
         btn_frame = tk.Frame(ctrl_frame)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        tk.Button(btn_frame, text="✅ Valider", font=("Arial", 11, "bold"),
+        tk.Button(btn_frame, text="Valider", font=("Arial", 11, "bold"),
                   bg="#4CAF50", fg="white", width=12,
                   command=self.validate).pack(side=tk.LEFT, padx=5)
 
-        tk.Button(btn_frame, text="❌ Annuler", font=("Arial", 11),
+        tk.Button(btn_frame, text="Annuler", font=("Arial", 11),
                   width=12,
                   command=self.cancel).pack(side=tk.LEFT, padx=5)
 
@@ -103,7 +95,7 @@ class BacAssignmentGUI:
         self.window.geometry(f"+{x}+{y}")
 
     def display_image(self, frame, image_bgr):
-        """Affiche l'image de détection redimensionnée dans le frame tkinter."""
+        #Affiche l'image de détection redimensionnée dans le frame tkinter.
         # Conversion BGR → RGB
         rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(rgb)
@@ -119,7 +111,7 @@ class BacAssignmentGUI:
         label.pack(padx=5, pady=5)
 
     def validate(self):
-        """Récupère les assignations et ferme la fenêtre."""
+        #Récupère les assignations et ferme la fenêtre.
         self.result = {}
         for label, combo in self.combos.items():
             # Extraire le numéro du bac depuis "Bac N"
@@ -131,6 +123,6 @@ class BacAssignmentGUI:
         self.window.destroy()
 
     def cancel(self):
-        """Annule et ferme."""
+        #Annule et ferme.
         self.result = None
         self.window.destroy()
