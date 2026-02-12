@@ -1,12 +1,7 @@
-"""
-Utilitaire pour définir le mapping cluster → label.
+""
+Script qui sert un peu à rien
+""
 
-Après avoir inspecté les dossiers resultats_kmeans/cluster_X/,
-lancez ce script pour enregistrer l'association.
-
-Utilisation :
-  python set_cluster_map.py
-"""
 
 import os
 import joblib
@@ -27,12 +22,8 @@ def main():
     kmeans = joblib.load(KMEANS_PATH)
     n_clusters = kmeans.n_clusters
 
-    print("=" * 50)
-    print("  ASSOCIATION CLUSTER → LABEL")
-    print("=" * 50)
     print(f"\nLabels disponibles : {LABELS_DISPONIBLES}")
     print(f"Nombre de clusters : {n_clusters}")
-    print("\nInspectez les dossiers resultats_kmeans/cluster_X/ pour identifier les pièces.\n")
 
     cluster_map = {}
     for cid in range(n_clusters):
@@ -54,13 +45,6 @@ def main():
 
     os.makedirs(MODEL_DIR, exist_ok=True)
     joblib.dump(cluster_map, CLUSTER_MAP_PATH)
-
-    print("\n" + "=" * 50)
-    print(f"Mapping sauvegardé dans '{CLUSTER_MAP_PATH}' :")
-    for cid, lab in sorted(cluster_map.items()):
-        print(f"  Cluster {cid} → {lab}")
-    print("=" * 50)
-
 
 if __name__ == "__main__":
     main()
