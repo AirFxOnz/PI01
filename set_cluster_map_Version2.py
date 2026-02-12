@@ -1,8 +1,3 @@
-""
-Script qui sert un peu à rien
-""
-
-
 import os
 import joblib
 
