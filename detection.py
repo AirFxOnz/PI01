@@ -26,25 +26,10 @@ GST_PIPELINE = ( #setup des images
 MODEL_DIR = "models"
 PCA_PATH = os.path.join(MODEL_DIR, "pca.joblib")
 KMEANS_PATH = os.path.join(MODEL_DIR, "kmeans.joblib")
-CLUSTER_MAP_PATH = os.path.join(MODEL_DIR, "cluster_map.joblib")
 
-# Mapping par défaut cluster → label
-DEFAULT_CLUSTER_MAP = {
-    0: "Grande Vis",
-    1: "Petite Vis",
-    2: "Ecrou",
-    3: "Rondelle",
-    4: "Autre",
-}
 
-# Couleurs par label pour le dessin
-COULEURS_LABEL = {
-    "Grande Vis": (255, 0, 0),
-    "Petite Vis": (255, 150, 0),
-    "Ecrou": (0, 255, 0),
-    "Rondelle": (0, 255, 255),
-    "Autre": (128, 128, 128),
-}
+# Une couleur par cluster
+COULEURS_CLUSTERS = [(255,0,0),(0,255,0),(0,0,255),(0,255,255),(128,128,128)]
 
 
 class Classifier:
@@ -55,7 +40,6 @@ class Classifier:
         self.model = None
         self.pca = None
         self.kmeans = None
-        self.cluster_map = None
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -84,12 +68,6 @@ class Classifier:
             self.pca = None
             self.kmeans = None
 
-        if os.path.exists(CLUSTER_MAP_PATH):
-            self.cluster_map = joblib.load(CLUSTER_MAP_PATH)
-            print(f"Mapping clusters chargé : {self.cluster_map}")
-        else:
-            self.cluster_map = DEFAULT_CLUSTER_MAP
-            print(f"Mapping clusters par défaut : {self.cluster_map}")
 
         self._loaded = True
         print("Classifieur prêt.")
@@ -117,6 +95,12 @@ class Classifier:
         3. Extraction features DINOv2
         4. PCA → KMeans → label
         """
+
+        # DEBUG — à retirer ensuite
+        print(f"[DEBUG] pca chargé : {self.pca is not None}")
+        print(f"[DEBUG] kmeans chargé : {self.kmeans is not None}")
+
+    
         if self.pca is None or self.kmeans is None:
             return "Inconnu", -1
 
@@ -137,7 +121,7 @@ class Classifier:
         feat_reduced = self.pca.transform(feat_np)
         cluster_id = int(self.kmeans.predict(feat_reduced)[0])
 
-        label = self.cluster_map.get(cluster_id, "Autre")
+        label = f"cluster{cluster_id}"
         return label, cluster_id
 
 
@@ -224,12 +208,12 @@ def detecter_objets(frame):
 
         # 5. CLASSIFICATION par DINOv2 + PCA + KMeans
         label, cluster_id = _classifier.classify_crop(piece_crop)
-        couleur = COULEURS_LABEL.get(label, (128, 128, 128))
+        couleur = COULEURS_CLUSTERS[cluster_id % len(COULEURS_CLUSTERS)]
 
         # 6. DESSIN
         cv2.drawContours(cropped, [cnt], -1, couleur, 2)
         cv2.circle(cropped, (cx, cy), 5, (0, 0, 255), -1)
-        cv2.putText(cropped, f"{label} (C:{cluster_id})", (cx - 30, cy - 20),
+        cv2.putText(cropped, f"{label}", (cx - 30, cy - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         donnees_objets.append({

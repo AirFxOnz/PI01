@@ -1,5 +1,5 @@
 models/
-resultats_k-means/
+resultats_kmeans/
 __pycache__/
 *.py[cod]
 
