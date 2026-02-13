@@ -20,7 +20,7 @@ from sklearn.cluster import KMeans
 import joblib
 
 
-DATASET_PATH = "dataset_edge_new" #Dataset edge généré par preprocessing.py
+DATASET_PATH = "dataset_edge" #Dataset edge généré par preprocessing.py
 OUTPUT_DIR = "resultats_kmeans"
 MODEL_DIR = "models"
 N_CLUSTERS = 5 # Avec 4 clusters les résultats sont moins bons, 5 semble mieux séparer les pièces (nous n'avons que 4 bacs pour rappel)
@@ -35,7 +35,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu" #Nous l'avons fait tourner sur CPU, la vitesse était acceptable
     print(f"Device : {device}")
 
-    model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+    model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
     model.to(device)
     model.eval()
 
