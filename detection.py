@@ -95,6 +95,12 @@ class Classifier:
         3. Extraction features DINOv2
         4. PCA → KMeans → label
         """
+
+        # DEBUG — à retirer ensuite
+        print(f"[DEBUG] pca chargé : {self.pca is not None}")
+        print(f"[DEBUG] kmeans chargé : {self.kmeans is not None}")
+
+    
         if self.pca is None or self.kmeans is None:
             return "Inconnu", -1
 
