@@ -1,9 +1,9 @@
-Les fichiers .STL et .SLDPRT que nous avons utilisés lors de notre modding sont disponibles dans les dossiers correspondants.
+The .STL and .SLDPRT files that we used during our modding process are available in the corresponding folders.
 
-Il faut garder à l'esprit que ces pièces sont adaptées pour une imprimante Tronxy X5S ainsi qu'une Raspberry Pi 5 et une caméra Raspberry IA.
+Please note that these parts are designed for a Tronxy X5S printer, as well as a Raspberry Pi 5 and a Raspberry Pi AI camera.
 
-Si vous possédez le même setup, alors vous pouvez imprimer directement les STL ; sinon les fichiers SolidWorks sont présents afin que vous puissiez les modifier selon vos besoins.
+If you have the same setup, you can print the STL files directly; otherwise, the SolidWorks files are provided so that you can modify them according to your needs.
 
-Les bras de support existent en deux versions : une complète et une coupée en deux afin de pouvoir les imprimer en deux fois.
+The support arms are available in two versions: one as a single piece and another split into two parts so they can be printed separately.
 
-sur le support de brosse, nous avons collé/visé 3 têtes de brosse à dents que nous avons découpées.
+For the brush holder, we glued/screwed three toothbrush heads that we had cut beforehand.
