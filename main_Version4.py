@@ -223,23 +223,27 @@ def deplacer_une_piece(gui, p):
     gui.controller.send_command(f"G1 Z{Z_BASSE} F{F_Z}")
     gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 3:Alignement Y
-    if abs(piece_mm_y - bac_y) > 1.0:
+    # ÉTAPE 3: Poussée X vers le bord
+    gui.controller.send_command(f"G1 X{BORD_X_MM - 15} F{F_POUSSEE}") # 1cm du bord pour ne pas tomber dans le bon bac
+    gui.controller.send_command("M400", timeout_s=15)
+
+    # ÉTAPE 4: Alignement Y
+    if abs(piece_mm_y - bac_y) > 1.0: #la pièce est devant le bon bac, au centre (marge de 1mm)
         gui.controller.send_command(f"G1 Y{bac_y} F{F_POUSSEE}")
         gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 4:Poussée X vers le bord
-    gui.controller.send_command(f"G1 X{BORD_X_MM} F{F_POUSSEE}")
+    # ÉTAPE 5:Balayage dans le bac
+    gui.controller.send_command(f"G1 X{BORD_X_MM} F{F_POUSSEE}") #On pousse la pièce dans le bac
     gui.controller.send_command("M400", timeout_s=15)
 
-    # ÉTAPE 5:Balayage
-    gui.controller.send_command(f"G1 X{BORD_X_MM - 20} Z{Z_HAUTE} F{F_Z}")
-    gui.controller.send_command("M400", timeout_s=15)
-    gui.controller.send_command(f"G1 Z{Z_BASSE} F{F_Z}")
-    gui.controller.send_command("M400", timeout_s=15)
-    gui.controller.send_command(f"G1 X{BORD_X_MM} F{F_POUSSEE}")
+    gui.controller.send_command(f"G1 X{BORD_X_MM-20} Z{Z_HAUTE} F{F_Z}") #On recule en montant pour faire le rebalayage
     gui.controller.send_command("M400", timeout_s=15)
 
+    gui.controller.send_command(f"G1 Z{Z_BASSE} F{F_Z}") #Redescente
+    gui.controller.send_command("M400", timeout_s=15)
+
+    gui.controller.send_command(f"G1 X{BORD_X_MM} F{F_POUSSEE}") #repoussage
+    gui.controller.send_command("M400", timeout_s=15)
     # ÉTAPE 6:Remontée
     gui.controller.send_command(f"G1 Z{Z_HAUTE} F{F_Z}")
     gui.controller.send_command("M400", timeout_s=15)
