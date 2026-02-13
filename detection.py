@@ -7,14 +7,11 @@ from skimage import color, filters, feature, util
 import joblib
 import os
 
-<<<<<<< HEAD
 
-#CONFIGURATION
-=======
 # ==========================================
 # CONFIGURATION
 # ==========================================
->>>>>>> c918ff127ea9c40f79682bd87452c0e0098d21ad
+
 CANNY_LOW = 50  #défitions des seuils de  pour la detection de contours
 CANNY_HIGH = 70
 CUT_TOP_PCT, CUT_BOTTOM_PCT = 0, 0.03 # % de crop
