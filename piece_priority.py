@@ -1,57 +1,69 @@
 from dataclasses import dataclass, field
 
-@dataclass
+
+@dataclass #generation automatique de méthode spéciales comme __init__ ou __repr__
 class Piece:
-    id: int
+    id: int #identifiant unique de la pièce 
     x: float    
     y: float    
-    classe: int
+    classe: int #type de piièce
 
     def pos(self):
         return (self.x, self.y)
 
-    def __repr__(self):
+    def __repr__(self): #DEBUG sous forme de chaine
         return f"P{self.id}(pos=({self.x:.1f},{self.y:.1f})mm, cl={self.classe})"
 
 
-@dataclass
+@dataclass #generation automatique de méthode spéciales comme __init__ ou __repr__
 class Boite:
     classe: int
     position: float
 
-    def __repr__(self):
+    def __repr__(self): #DEBUG sous forme de chaine
         return f"Boite(classe={self.classe}, pos={self.position}mm)"
 
 
-@dataclass
+@dataclass 
 class Plateau:
     largeur: float = 320.0   # mm
     hauteur: float = 320.0   # mm
-    boites: dict = field(default_factory=dict)
+    boites: dict = field(default_factory=dict) #à chaque instance de la classe, on créée un nouveau dictionnaire
 
     def coordonnee_boite(self, classe: int):
-        boite = self.boites[classe]
-        return (self.largeur, boite.position)
+        boite = self.boites[classe] #dictionnaire appartenant à cet instance
+        return (self.largeur, boite.position) #largeur : coordonée x, boite.position : corrdonée y
 
     def distance_au_bord(self, piece: Piece) -> float:
-        return self.largeur - piece.x
+        return self.largeur - piece.x 
 
     def distance_laterale(self, piece: Piece) -> float:
-        _, by = self.coordonnee_boite(piece.classe)
-        return abs(piece.y - by)
+        _, by = self.coordonnee_boite(piece.classe) #coordonée y de la boite
+        return piece.y - by #de combien je dois bouger pour arriver devant la boite ( + : bouger vers le bas / - : bouger vers le haut)
 
-    def distance_totale(self, piece: Piece) -> float:
+    def distance_totale(self, piece: Piece) -> float: #pas DE, somme des chemins parcourus en x puis en y
         bx, by = self.coordonnee_boite(piece.classe)
-        return abs(piece.x - bx) + abs(piece.y - by)
+        return abs(piece.x - bx) + abs(piece.y - by) 
 
 
 def piece_sur_trajet(piece: Piece, autre: Piece, plateau: Plateau, marge: float = 20.0) -> bool:
-    
+    """ Vérifie si une pièce est sur le trajet pour éviter la collision
+
+    Args:
+        piece (Piece): pièce en déplacement
+        autre (Piece): Autre pièce avec laquelle la pièce déplacée peut entrer en collision
+        plateau (Plateau): Instance de la classe Plateau 
+        marge (float, optional): Marge d'évitement en mm (défaut : 20mm)
+
+    Returns:
+        bool: True : Collision / False : Pas de collision
+    """
     bx, by = plateau.coordonnee_boite(piece.classe)
     x, y = piece.x, piece.y
     ax, ay = autre.x, autre.y
 
     y_min, y_max = min(y, by), max(y, by)
+
     if abs(ax - x) <= marge and y_min - marge <= ay <= y_max + marge:
         return True
 
@@ -90,11 +102,7 @@ def calculer_priorite(pieces: list, plateau: Plateau) -> list:
                 "dist_totale": dist_totale,
             })
 
-        candidats.sort(key=lambda e: (
-            e["collisions"],
-            e["dist_bord"],
-            e["dist_totale"],
-        ))
+        candidats.sort(key=lambda e: (e["dist_bord"],e["collisions"], e["dist_totale"],)) #d'abord la pièce la plus proche du bord, ensuite celle avec le moins de collisions, ensuite celle la plus loin
 
         meilleur = candidats[0]
         ordre.append(meilleur)
@@ -110,24 +118,18 @@ def decrire_trajet(piece: Piece, plateau: Plateau) -> str:
     dx = bx - x
     dy = by - y
 
-    # Mouvement diagonal : on avance simultanément en X et Y
-    # La partie diagonale couvre min(|dx|, |dy|) sur chaque axe
-    diag = min(abs(dx), abs(dy))
-    reste_x = abs(dx) - diag
-    reste_y = abs(dy) - diag
-
     dir_x = "droite" if dx >= 0 else "gauche"
     dir_y = "bas" if dy > 0 else "haut"
 
     trajet = f"({x:.1f},{y:.1f})"
 
-    if diag > 0:
-        trajet += f" -> diagonale {dir_x}-{dir_y} {diag:.1f}mm"
+    # D'abord le mouvement horizontal (axe X)
+    if abs(dx) > 0:
+        trajet += f" -> {dir_x} {abs(dx):.1f}mm"
 
-    if reste_x > 0:
-        trajet += f" puis {dir_x} {reste_x:.1f}mm"
-    elif reste_y > 0:
-        trajet += f" puis {dir_y} {reste_y:.1f}mm"
+    # Puis le mouvement vertical (axe Y)
+    if abs(dy) > 0:
+        trajet += f" puis {dir_y} {abs(dy):.1f}mm"
 
     trajet += f" -> ({bx:.1f},{by:.1f})"
 
