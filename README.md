@@ -18,8 +18,8 @@ This project consists of transforming a 3D printer into an automated sorting mac
 
  
 # Authors
-Guillaume Tritz--Guden
-Nicola Di Pietro
-Mathieu Brasseur
-Mohamed Hamza Choukaili
-Bilal Erraissi
+- Guillaume Tritz--Guden
+- Nicola Di Pietro
+- Mathieu Brasseur
+- Mohamed Hamza Choukaili
+- Bilal Erraissi
