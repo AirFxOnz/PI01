@@ -88,9 +88,21 @@ pip install -r requirements.txt
 ```
 
 ### 5. Usage
+#### Train the model
 ```bash
-python3 main.py
+python src/train_classifier
 ```
+
+#### Launch sorting 
+- Turn on the printer by pressing the button next to the power cable
+- Make sure the printer is connected to the Raspberry Pi5 : the RJ45 cable needs to be plugged in an USB port)
+  
+```bash
+python main.py
+```
+Once the GUI has launched, click the "connecter" button. It allows the communication between the Printer and the RPI5 via serial connection
+Multiple Options then : 
+- 
 ---
 
 ## 👥 Team Members
