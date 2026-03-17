@@ -4,8 +4,6 @@ Pillow==12.1.1
 pyserial==3.5
 scikit_learn==1.8.0
 scikit_image==0.26.0
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.10.0+cpu
-torchvision==0.25.0+cpu
+torch
+torchvision
 tqdm==4.67.3
-opencv-python==4.13.0.92
