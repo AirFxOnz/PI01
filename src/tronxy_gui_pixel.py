@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import threading
-from tronxy_control import TronxyController
+from .tronxy_control import TronxyController
 
 
 class TronxyPixelGUI:
