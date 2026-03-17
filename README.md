@@ -100,9 +100,14 @@ python src/train_classifier
 ```bash
 python main.py
 ```
-Once the GUI has launched, click the "connecter" button. It allows the communication between the Printer and the RPI5 via serial connection
-Multiple Options then : 
-- 
+<p align="center">
+  <img src="Images/screenshot.png" alt="GUI" width="500"/>
+</p>
+Once the GUI has launched, click on "connecter". It allow the communication between the RPI5 and the printer via serial connection
+Multiple options then : \ 
+- **Home (G28)** Do a homing
+- Move the printer's head by using pixel coordinates
+- Launch a detection and a classification (whithout sorting) :
 ---
 
 ## 👥 Team Members
