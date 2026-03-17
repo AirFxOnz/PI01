@@ -30,13 +30,13 @@ import cv2
 import tkinter as tk
 from tkinter import messagebox
 
-from detection import detecter_objets, GST_PIPELINE
-from piece_priority import (
+from src.detection import detecter_objets, GST_PIPELINE
+from src.piece_priority import (
     Piece, Boite, Plateau,
     calculer_priorite, decrire_trajet
 )
-from tronxy_gui_pixel import TronxyPixelGUI
-from bac_assignment_gui import BacAssignmentGUI
+from src.tronxy_gui_pixel import TronxyPixelGUI
+from src.bac_assignment_gui import BacAssignmentGUI
 
 #  CONFIGURATION (tout en mm)
 
