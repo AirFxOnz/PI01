@@ -6,7 +6,7 @@
 </p>
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![Status](https://img.shields.io/badge/status-finished-green))
+![Status](https://img.shields.io/badge/status-finished-green)
 
 
 ## 📋 Project Overview
